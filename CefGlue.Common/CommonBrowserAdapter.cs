@@ -256,13 +256,6 @@ namespace Xilium.CefGlue.Common
             var windowInfo = CefWindowInfo.Create();
             windowInfo.RuntimeStyle = CefRuntimeStyle.Chrome;
 
-            if (CefRuntime.Platform == CefRuntimePlatform.Windows)
-            {
-                // This function set ParentHandle (owner in Windows) and set Bounds to CW_USERDEFAULT (only works on Windows).
-                // So, it should be called only in Windows.
-                windowInfo.SetAsPopup(BrowserHost?.GetWindowHandle() ?? IntPtr.Zero, "DevTools");
-            }
-
             BrowserHost?.ShowDevTools(windowInfo, _cefClient, new CefBrowserSettings(), new CefPoint());
         }
 
