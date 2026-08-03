@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using Xilium.CefGlue.Interop;
 
 namespace Xilium.CefGlue.Platform;
@@ -14,7 +13,13 @@ internal sealed unsafe class CefAcceleratedPaintInfoLinuxImpl : CefAcceleratedPa
 
         Modifier = _self->modifier;
         PlaneCount = _self->plane_count;
-        Planes = _self->planes.Select(CefAcceleratedPaintNativePixmapPlane.FromNative).ToArray();
+        Planes = new[]
+        {
+            CefAcceleratedPaintNativePixmapPlane.FromNative(_self->plane0),
+            CefAcceleratedPaintNativePixmapPlane.FromNative(_self->plane1),
+            CefAcceleratedPaintNativePixmapPlane.FromNative(_self->plane2),
+            CefAcceleratedPaintNativePixmapPlane.FromNative(_self->plane3),
+        };
         Format = _self->format;
         Extra = CefAcceleratedPaintInfoCommon.FromNative(_self->extra);
     }

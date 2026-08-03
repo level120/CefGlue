@@ -34,10 +34,18 @@ namespace Xilium.CefGlue.Interop
     [StructLayout(LayoutKind.Sequential, Pack = libcef.ALIGN)]
     internal unsafe struct cef_accelerated_paint_info_t_linux
     {
+        // kAcceleratedPaintMaxPlanes in cef_types_linux.h
+        public const int MaxPlanes = 4;
+
         public UIntPtr size;
 
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4)]
-        public cef_accelerated_paint_native_pixmap_plane_t[] planes;
+        // The native field is an inline plane[MaxPlanes] array. It is spelled out as
+        // individual fields because a C# array field would make this struct a managed
+        // type, which can neither be pointed at nor laid out like the native struct.
+        public cef_accelerated_paint_native_pixmap_plane_t plane0;
+        public cef_accelerated_paint_native_pixmap_plane_t plane1;
+        public cef_accelerated_paint_native_pixmap_plane_t plane2;
+        public cef_accelerated_paint_native_pixmap_plane_t plane3;
 
         public int plane_count;
         public ulong modifier;
