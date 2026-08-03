@@ -6,7 +6,7 @@ Deep review of branch `RDEV-8412-bump-cef-to-134.3.9` (tip `a7bc617`) against `m
 
 **Original verdict (superseded).** *"NOT mergeable as-is. One critical build break, two critical debug-leftovers shipped in the library, the Windows-crash root cause is real and fixable, and both known criticals persist."* — kept for the record; the build break did not exist and the locales root cause was misdiagnosed. See the correction log.
 
-**Current verdict (2026-08-03): still not mergeable, but closer.** The Windows startup crash is fixed and verified by running the app; the Linux struct-layout corruption and the shipped debug logging are fixed. Still open: the app has only been shown to *start* on Windows — no render, DevTools, WebGL or test run is confirmed, and `win-arm64` is untested. The remaining debug scaffolding (C9–C11, C14, C20, C21, C25), the observer/`log_items` API gaps (C13, C17), and the F1/F2 decisions are untouched, as are both known criticals.
+**Current verdict (2026-08-03): still not mergeable, but the Windows blocker is gone.** The PR's headline failure — Windows unusable — came down to a single missing copy of the locale paks, now fixed and verified by running the app: no startup crash and no network-service crash loop, on build and publish output alike. The Linux struct-layout corruption and the shipped debug logging are also fixed. Still open: the app has been shown to *run clean*, but no page render, DevTools, WebGL or test run has been confirmed, and `win-arm64` is untested. The remaining debug scaffolding (C9–C11, C14, C20, C21, C25), the observer/`log_items` API gaps (C13, C17), and the F1/F2 decisions are untouched, as are both known criticals.
 
 ---
 
@@ -19,16 +19,24 @@ Deep review of branch `RDEV-8412-bump-cef-to-134.3.9` (tip `a7bc617`) against `m
 | **A1/C1** — `CS0208` build break on all OSes | 🔴 CONFIRMED | **Wrong.** Since C# 11 a pointer to a managed struct is *warning* `CS8500`, not an error. The branch tip compiled clean. | Clean rebuild of `a7bc617`: 0 errors. `#error` canary proved the file really is compiled. |
 | **A1 second half** — struct layout corrupt | 🔴 CONFIRMED | **Correct.** Managed `planes[]` is an 8-byte reference: `plane_count` sat at offset 24 instead of 136. | Measured both layouts; inline version matches `cef_types_linux.h`. Fixed in `0b9c4bb`. |
 | **C7** — `@(CefRuntimeWin64Locales)` "defined nowhere in the repo" | 🔴 CONFIRMED | **Wrong.** Defined in `packages/chromiumembeddedframework.runtime/134.3.9/build/…props`; the paks did copy. | Grep + build output. |
-| **A2/P1** — locales go to `<app>\locales\`, not `runtimes\<rid>\native\locales\` | 🟠 PLAUSIBLE | **Backwards for `dotnet build`.** Applying it as written *causes* the crash. | See below. |
+| **A2/P1** — locales go to `<app>\locales\` *instead of* `runtimes\<rid>\native\locales\` | 🟠 PLAUSIBLE | **False dichotomy.** A build needs them in **both**; applying the swap as written just trades one crash for another. | See below. |
 
-**The real Windows defect.** The output contains **two copies of `libcef.dll`** — one at the app root, one at `runtimes\win-x64\native\`. The .NET loader picks the RID-native one, so CEF resolves `locales\` relative to *that* directory. The original `<Link>` was therefore already correct for `dotnet build`. The genuine gap was the missing `<CopyToPublishDirectory>`: `dotnet publish` shipped no locales at all. And publish needs them at the *root*, because a RID-specific publish flattens `runtimes\` away.
+**The real Windows defect.** The build output contains **two copies of `libcef.dll`**, and *different processes load different ones*:
 
-| Operation | `libcef.dll` loads from | locales needed at |
+| Process | loads `libcef.dll` from | needs locales at |
 |---|---|---|
-| `dotnet build` | `runtimes\win-x64\native\` | `runtimes\win-x64\native\locales\` |
-| `dotnet publish -r win-x64` | app root (flattened) | `<app>\locales\` |
+| Browser (the app itself) | `runtimes\win-x64\native\` | `runtimes\win-x64\native\locales\` |
+| Subprocess (`CefGlueBrowserProcess\…exe`) | app root — `NativeLibsLoader` resolves `BaseDirectory\..` | `<app>\locales\` |
+| Either, after `publish -r win-x64` | app root (the two are flattened into one) | `<app>\locales\` |
 
-Symptom when they are missing: exit code `-2147483645` (`0x80000003` STATUS_BREAKPOINT) raised inside `libcef.dll`, with **no stdout and no `debug.log`**. The Windows Application event log is the only place the faulting module path shows up — that line is what identifies which `libcef.dll` copy loaded. Fixed in `f0ad338`.
+CEF resolves `locales\` relative to whichever copy was loaded, so on build **both** directories need the paks. Only the native one had them. Every other CEF resource (`icudtl.dat`, `resources.pak`, the snapshots) was already duplicated into both by the main asset-copy block — locales were the sole exception, which is why nothing else broke.
+
+**Two distinct symptoms, two different missing copies:**
+
+- Missing at `runtimes\…\native\locales\` → the **browser process** aborts instantly: exit code `-2147483645` (`0x80000003` STATUS_BREAKPOINT) inside `libcef.dll`, with **no stdout and no `debug.log`**. The Windows Application event log is the only place the faulting module path appears — that line is what identifies which copy loaded.
+- Missing at `<app>\locales\` → the browser starts fine, but every **utility process** fails to init its resource bundle: an endless `ERROR:network_service_instance_impl.cc(612) Network service crashed, restarting service.` loop, with the GPU process going down alongside. **This was the original Windows failure** the PR reported, and it was hidden behind the first symptom until the browser process could start.
+
+Fixed in `f0ad338` (publish) + `bb642a0` (both build locations). Measured: 69 network-service crashes in a 25 s run before, 0 after — at 15 s and 45 s alike, confirming it was a loop and not a shutdown artifact.
 
 **Method lesson.** Every claim above that survived was one about *code semantics*; every claim that failed was about *build and load behavior* — exactly the class that static reading cannot settle. Treat the `CONFIRMED`/`PLAUSIBLE` labels in this document as leads. Reproduce before acting, and re-run the app after acting.
 
@@ -43,7 +51,7 @@ Symptom when they are missing: exit code `-2147483645` (`0x80000003` STATUS_BREA
 | Interop regeneration + API migration | ✅ largely correct; 2 issues (C13, C17) |
 | **Assembly compiles** | ✅ **always did** — C1 was wrong (`CS8500` warning, not `CS0208` error) |
 | Linux accelerated-paint struct layout | ✅ **fixed** `0b9c4bb` (the real half of A1) |
-| **Windows runtime (locales)** | ✅ **fixed** `f0ad338` — build *and* publish start and stay up (x64; arm64 untested) |
+| **Windows runtime (locales)** | ✅ **fixed** `f0ad338`+`bb642a0` — startup crash *and* the network-service crash loop both gone (x64; arm64 untested) |
 | Production hygiene | ✅ **fixed** `c711f52` — log path + verbose logging + telemetry comment removed |
 | Debug scaffolding removed | ❌ leftovers remain (C9–C11, C14, C20, C21, C25) |
 | Known criticals from prior audit | ❌ both still present (C4, C5) |
@@ -73,7 +81,7 @@ At runtime the array field is an 8-byte object reference, not 128 inline bytes �
 
 **Fixed** by spelling the four planes out as inline `plane0..plane3` fields, which also silences `CS8500`.
 
-### A2 — Windows locales (right symptom, wrong mechanism; ✅ FIXED `f0ad338`)
+### A2 — Windows locales (right symptom, wrong mechanism; ✅ FIXED `f0ad338`+`bb642a0`)
 
 > **Corrected 2026-08-03.** filipnavara's symptom-level diagnosis — missing `.pak` files — was right. **Both** mechanisms proposed below were wrong, and the prescribed fix *causes* the crash on `dotnet build`. Do not apply this section as written.
 
@@ -83,16 +91,11 @@ At runtime the array field is an 8-byte object reference, not 128 inline bytes �
 ~~2. **(P1)** The `<Link>` targets `runtimes\win-x64\native\locales\…` — not `<app>\locales\` — so CEF's `<module dir>\locales` default misses them.~~
 **Backwards.** The premise that `<module dir>` is the app root is false: the output carries **two copies of `libcef.dll`**, and the .NET loader picks the RID-native one at `runtimes\win-x64\native\`. So the original `<Link>` already pointed at the correct directory for `dotnet build`, and moving the paks to `<app>\locales\` empties the directory CEF actually reads.
 
-**The actual defect** was narrower: the locales block set only `<CopyToOutputDirectory>`, with no `<CopyToPublishDirectory>` — so `dotnet publish` produced an app with no locales anywhere. Publish also needs a *different* layout, because a RID-specific publish flattens `runtimes\` into the app root:
+**The actual defect** was that the paks reached only *one* of the two directories CEF reads them from, and were absent from publish entirely. See the correction log for the full table; in short, the browser process and the CefGlue subprocess load different `libcef.dll` copies and each needs its own `locales\` folder. The original block also set no `<CopyToPublishDirectory>`, so `dotnet publish` shipped none at all.
 
-| Operation | `libcef.dll` loads from | locales needed at |
-|---|---|---|
-| `dotnet build` | `runtimes\win-x64\native\` | `runtimes\win-x64\native\locales\` |
-| `dotnet publish -r win-x64` | app root (flattened) | `<app>\locales\` |
+**Fixed** in `f0ad338` + `bb642a0`: both build directories get the paks, publish gets the single flattened copy. Verified by running — the network-service crash loop that this PR was actually suffering from is gone (69 crashes per 25 s run → 0), on build and publish output alike (x64; `win-arm64` uses the same code path but is untested).
 
-**Fixed** by splitting the item in two — build copy keeps the `runtimes\<rid>\native\locales\` link, publish copy targets `<app>\locales\` — so the 44 MB pak set is deployed once per operation rather than to both. Verified: 55 paks in the right place for each, and the demo starts and stays up in both (x64; `win-arm64` uses the same code path but is untested).
-
-**Debugging note for next time.** Missing paks abort with exit code `-2147483645` (`0x80000003` STATUS_BREAKPOINT) inside `libcef.dll` and produce **no stdout and no `debug.log`**. The Windows Application event log carries the faulting module path, which is what reveals *which* `libcef.dll` copy loaded — the decisive clue, and the one this review missed by reasoning from the app-root copy.
+**Debugging note for next time.** The two failure modes look nothing alike — a silent instant `STATUS_BREAKPOINT` when the *browser* copy is missing, an endless `network_service_instance_impl.cc(612)` restart loop when the *subprocess* copy is missing — but they have the same cause. In both cases the first question is *which* `libcef.dll` the failing process loaded, which the Windows Application event log answers and static reading does not. This review reasoned from the app-root copy and got both mechanisms wrong.
 
 ---
 
@@ -183,7 +186,7 @@ Added 2026-08-03, refuted by building rather than reading — see the correction
 ## Recommended path to green
 
 1. ~~**Fix the build break** (A1)~~ — **done** `0b9c4bb`. There was no build break; the Linux `planes` array was inlined for the layout corruption instead.
-2. ~~**Fix Windows locales** (A2 / C7+P1)~~ — **done** `f0ad338`, but *not* by the method A2 prescribed. See the corrected A2. Windows now starts on both build and publish output (x64).
+2. ~~**Fix Windows locales** (A2 / C7+P1)~~ — **done** `f0ad338`+`bb642a0`, but *not* by the method A2 prescribed. See the corrected A2. This also cleared the network-service crash loop, which was the PR's actual reported Windows failure.
 3. **Strip remaining debug scaffolding** (Section B) — log path/verbose/telemetry are **done** `c711f52`; still open: `TODO hgo` markers, WebGL URL, OSR-demo removal, editorconfig/reactiveui/chmod noise.
 4. **Verify the two `SharedTexture` mappings** (C9/C10) — accelerated paint is load-bearing and the author flagged uncertainty.
 5. **Decide F1/F2 consciously** — Windows sandbox posture; FirstPartySets/#3643 status.
