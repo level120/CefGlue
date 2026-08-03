@@ -6,7 +6,9 @@ Deep review of branch `RDEV-8412-bump-cef-to-134.3.9` (tip `a7bc617`) against `m
 
 **Original verdict (superseded).** *"NOT mergeable as-is. One critical build break, two critical debug-leftovers shipped in the library, the Windows-crash root cause is real and fixable, and both known criticals persist."* — kept for the record; the build break did not exist and the locales root cause was misdiagnosed. See the correction log.
 
-**Current verdict (2026-08-03): still not mergeable, but the Windows blocker is gone.** The PR's headline failure — Windows unusable — came down to a single missing copy of the locale paks, now fixed and verified by running the app: no startup crash and no network-service crash loop, on build and publish output alike. The Linux struct-layout corruption and the shipped debug logging are also fixed. Still open: the app has been shown to *run clean*, but no page render, DevTools, WebGL or test run has been confirmed, and `win-arm64` is untested. The remaining debug scaffolding (C9–C11, C14, C20, C21, C25), the observer/`log_items` API gaps (C13, C17), and the F1/F2 decisions are untouched, as are both known criticals.
+**Current verdict (2026-08-03): still not mergeable, but the Windows blocker is gone.** The PR's headline failure — Windows unusable — came down to a single missing copy of the locale paks, now fixed and verified by running the app. **Windows windowed mode now works**: page render, DevTools and WebGL all confirmed on `get.webgl.org`. Also fixed: the Linux struct layout, the shipped debug logging, and DevTools opening without window decorations.
+
+What is *not* covered by that: **offscreen rendering has never been run on 134** (see C11 — the demo's OSR switch is dead), the test suite has not been run, and macOS/Linux/`win-arm64` are untested since these fixes landed. See [Priorities](#what-actually-matters-now) for the ranked open list.
 
 ---
 
@@ -53,9 +55,12 @@ Fixed in `f0ad338` (publish) + `bb642a0` (both build locations). Measured: 69 ne
 | Linux accelerated-paint struct layout | ✅ **fixed** `0b9c4bb` (the real half of A1) |
 | **Windows runtime (locales)** | ✅ **fixed** `f0ad338`+`bb642a0` — startup crash *and* the network-service crash loop both gone (x64; arm64 untested) |
 | Production hygiene | ✅ **fixed** `c711f52` — log path + verbose logging + telemetry comment removed |
-| Debug scaffolding removed | ❌ leftovers remain (C9–C11, C14, C20, C21, C25) |
+| **Windows windowed runtime** | ✅ render + DevTools + WebGL confirmed on `get.webgl.org` |
+| **Windows DevTools window** | ✅ **fixed** `ab10a9d` — opened as an undecorated child window (P6, found after review) |
+| **Offscreen rendering (OSR)** | ❌ **never run on 134** — demo's OSR switch is dead (C11); highest remaining risk |
+| Debug scaffolding removed | ❌ leftovers remain (C11, C14, C20, C21, C25); C9/C10 refuted |
 | Known criticals from prior audit | ❌ both still present (C4, C5) |
-| macOS runtime | ✅ per PR; interop verified |
+| macOS / Linux runtime | ⚠️ macOS ✅ per PR, but neither retested since these fixes |
 | app.manifest / package split / pins | ✅ clean (see Refuted) |
 
 ---
@@ -77,7 +82,9 @@ managed array field : sizeof=32   plane_count@24
 four inline fields  : sizeof=152  plane_count@136   ← matches cef_types_linux.h
 ```
 
-At runtime the array field is an 8-byte object reference, not 128 inline bytes — so `plane_count`/`modifier`/`format`/`extra` were 112 bytes off, and `_self->planes` reinterpreted native plane data as a managed reference. Latent until Linux OSR accelerated paint runs.
+At runtime the array field is an 8-byte object reference, not 128 inline bytes — so `plane_count`/`modifier`/`format`/`extra` were 112 bytes off, and `_self->planes` reinterpreted native plane data as a managed reference.
+
+**Severity footnote (added 2026-08-03).** This is currently **unreachable**, not merely latent: `CommonCefRenderHandler.OnAcceleratedPaint` is an empty method body, so CefGlue never consumes accelerated paint on any platform — OSR goes through `OnPaint` with a software buffer. The fix is still correct and worth having before anyone wires accelerated paint up, but it fixed no live defect. See P7.
 
 **Fixed** by spelling the four planes out as inline `plane0..plane3` fields, which also silences `CS8500`.
 
@@ -108,14 +115,39 @@ These ship in the `CefGlue.Common` NuGet (not just the demo) unless noted.
 | C2/C3 | ✅ | ~~Hardcoded `--log-file=C:\git\CefGlue\cef_main_log.txt` appended unconditionally in the browser process~~ — **fixed `c711f52`** | `BrowserCefApp.cs:40` | removed |
 | C6 | ✅ | ~~`--log-severity=verbose` forced on in shipped code~~ — **fixed `c711f52`** | `BrowserCefApp.cs:39` | removed |
 | C8/C19 | ✅ | ~~`// Telemetry to debug` + commented-out `disable-features=NetworkServiceSandbox`~~ — **fixed `c711f52`** | `BrowserCefApp.cs:37-38` | removed |
-| C9 | 🟠 | `// TODO hgo: Noy sure about this` above the **SharedTexture** getter (Windows accelerated paint) — unverified load-bearing interop | `Platform/Windows/CefAcceleratedPaintInfoWindowsImpl.cs:26` | verify mapping, remove note |
-| C10 | 🟠 | Same `TODO hgo` marker on the Mac SharedTexture getter | `Platform/Mac/CefAcceleratedPaintInfoMacImpl.cs:26` | verify mapping, remove note |
+| C9 | ⚪ | ~~`TODO hgo` above the **SharedTexture** getter — "unverified load-bearing interop"~~ **Refuted 2026-08-03: the mapping is correct.** Only the stale comment remains | `Platform/Windows/CefAcceleratedPaintInfoWindowsImpl.cs:26` | delete the comment |
+| C10 | ⚪ | Same, Mac. **Also correct** | `Platform/Mac/CefAcceleratedPaintInfoMacImpl.cs:26` | delete the comment |
 | C11 | 🟠 | OSR demo silently dead: `#if WINDOWLESS` init removed from `Program.cs`/`MainWindow` but the `WINDOWLESS` define kept in csproj → `Debug_WindowlessRender` builds a windowed demo. **OSR untested on 134.** | `Demo.Avalonia/Program.cs:19` | restore the OSR init, or remove the dead define |
 | C14 | 🟡 | Demo default URL changed to `https://get.webgl.org/` + commented aquarium URL (WebGL troubleshooting leftovers) | `Demo.Avalonia/BrowserView.axaml.cs:28` | revert to the intended landing page |
 | C20 | ⚪ | Unused `Avalonia.ReactiveUI` PackageReference added to the **demo** (note: the PR body says ReactiveUI is the macOS class-conflict fix — but that belongs in the library/consumers, not an unused demo ref; clarify intent) | `Demo.Avalonia/*.csproj:35` | remove or justify |
 | C21 | ⚪ | Unrelated ReSharper wrap-style keys added to `.editorconfig` (personal IDE prefs); `insert_final_newline` is fine | `.editorconfig:18` | drop the `csharp_wrap_*` keys |
 | C23 | nit | Leftover C++ codegen marker `/*--cef(optional_param=buffer)--*/` in a hand-written doc comment | `Classes.Proxies/CefV8Value.cs:171` | convert to `<summary>` |
 | C25 | nit | `gen-cef3.sh` mode flipped to executable (incidental chmod) | `Interop.Gen/gen-cef3.sh` | revert unless intended |
+
+---
+
+## B2. Found after the review (not in the original 8 dimensions)
+
+### P6 — DevTools opened as an undecorated child window on Windows (✅ FIXED `ab10a9d`)
+`CommonBrowserAdapter.ShowDeveloperTools` called `windowInfo.SetAsPopup(BrowserHost.GetWindowHandle(), "DevTools")`. `SetAsPopup` sets `ParentHandle`, and a window info carrying a parent makes CEF host DevTools as a **child widget inside the main window** — no title bar, no close/minimize/maximize. macOS was unaffected because it never called `SetAsPopup`.
+
+Measured by enumerating the Win32 window tree with DevTools open:
+
+| RuntimeStyle | SetAsPopup | top-level windows | DevTools window |
+|---|---|---|---|
+| Chrome (as committed) | yes | 1 | `Chrome_WidgetWin_1`, has a parent, `0x56000000` = `WS_CHILD` |
+| Chrome | **no** | **2** | `parent=0`, `0x16CF0000` = CAPTION\|SYSMENU\|THICKFRAME\|MINIMIZEBOX\|MAXIMIZEBOX |
+| default | yes | 1 | child again |
+
+So the **parent handle** is the cause, not `RuntimeStyle` — removing the Chrome style alone does not help, which is why it was left in place. Note this sits one line below the `RuntimeStyle.Chrome` call that the original review examined and cleared (Refuted #1): the verdict on that line was right, but the defect was its neighbour.
+
+### P7 — accelerated paint is never consumed
+`CommonCefRenderHandler.OnAcceleratedPaint` is an **empty method body**. CefGlue does not use accelerated paint on any platform; OSR renders through `OnPaint` with a software buffer. Consequences: C9/C10 are cosmetic, A1's struct fix is correct but unreachable, and any future OSR/GPU work starts from "not wired up" rather than "wired up and broken". Not a defect in this PR — recorded so the surface is not mistaken for live code.
+
+### P8 — `dotnet publish` can emit the subprocess without its dependencies (UNRESOLVED)
+Observed while testing: repeated `dotnet publish -o <dir>` runs produced an output containing `Xilium.CefGlue.BrowserProcess.exe` at the root but **none of its .NET dependency assemblies** (213 files short of a known-good publish of the same commit). Every CEF subprocess then fails to launch, presenting as a GPU-process crash loop ending in `FATAL:gpu_data_manager_impl_private.cc(420) GPU process isn't usable. Goodbye.` — a symptom that looks nothing like a packaging fault.
+
+An earlier publish of the same commit was complete, so this is intermittent. **Not diagnosed** — unknown whether it is an incremental-build artifact of publishing repeatedly to different `-o` directories, or a real fragility in how `@(CefGlueBrowserProcessFiles)` is gathered. Given this branch already shipped one publish-only defect (A2), a clean-clone publish should be verified before release.
 
 ---
 
@@ -169,7 +201,7 @@ The two **criticals** (#1, #2) are unaffected by the bump and remain the highest
 
 Both verifiers cleared these — recorded so they aren't re-raised:
 
-1. **DevTools `RuntimeStyle.Chrome`** (`CommonBrowserAdapter.cs:257`) — correct/harmless; only the DevTools popup, main browser stays default.
+1. **DevTools `RuntimeStyle.Chrome`** (`CommonBrowserAdapter.cs:257`) — correct/harmless; only the DevTools popup, main browser stays default. *(Still true, and re-confirmed by measurement in P6 — but the `SetAsPopup` call on the very next line **was** a real defect. Clearing a line is not clearing its neighbours.)*
 2. **Mixed package family (Windows CefSharp vs mac/linux `cef.redist.*`)** — `CefGlue.Packages.props` unchanged; the split is the existing, working design.
 3. **Version pins & macOS dylib names** — complete and consistent (`134.3.9` ×3, `Version 134.6998.178`); dylibs still valid.
 4. **`app.manifest` CefSharp identity** — clean; the earlier leftover `assemblyIdentity` was already removed (commit `9f38bef`); only standard UAC/`supportedOS` boilerplate remains (the functional GPU fix).
@@ -183,15 +215,40 @@ Added 2026-08-03, refuted by building rather than reading — see the correction
 
 ---
 
-## Recommended path to green
+## What actually matters now
+
+Ranked after the 2026-08-03 fixes. The original "path to green" is kept below for traceability, but this list supersedes it.
+
+### 1. OSR has never been run on CEF 134 — and it is a primary use case (C11)
+`CefGlue.Demo.Avalonia.csproj:14` defines `WINDOWLESS`, but **nothing references it** — no `#if WINDOWLESS` anywhere in the demo, and no `WindowlessRenderingEnabled` either. `Debug_WindowlessRender` therefore builds an ordinary windowed demo. Everything confirmed working on Windows is windowed mode only. After a 14-major Chromium jump, an entire product mode has zero validation, and known-critical #2 (OSR popup-close) lives in it.
+
+**Cheapest unblock on the list**: restore the OSR init, or delete the dead define so the gap stops being invisible.
+
+### 2. `NoSandbox = true` now applies to Windows (F1)
+`CefRuntimeLoader.cs:44-48` folds Windows into the Linux arm, so the renderer ships unsandboxed. Arguably required — CefGlue never plumbed `cef_sandbox_info` — but it is currently an accident of the branch rather than a recorded decision. Needs a yes/no from the team, not a code change.
+
+### 3. The FirstPartySets workaround was dropped unverified (F2)
+`disable-features=FirstPartySets` is gone from the tree entirely. Correct only if CEF #3643 is genuinely fixed in 134.3.9; otherwise this ships a YouTube crash. One check against the CEF tracker settles it.
+
+### 4. Verification gaps
+Test suite not run. macOS and Linux not retested since these fixes. `win-arm64` untested. Clean-clone publish unverified (P8).
+
+### 5. Everything else is hygiene
+Demo URL (C14), unused ReactiveUI ref (C20), `.editorconfig` prefs (C21), `chmod` (C25), codegen marker (C23), the two stale `TODO hgo` comments (C9/C10), unusable observer classes (C13), missing `log_items` (C17), pre-existing `FromNativeOrNull` NRE (C18). All real, all trivial, none a risk.
+
+Known-issue criticals #1/#2 are pre-existing on `main`, not bump regressions — schedule alongside, not necessarily blocking this merge.
+
+<details><summary>Original path to green (superseded)</summary>
 
 1. ~~**Fix the build break** (A1)~~ — **done** `0b9c4bb`. There was no build break; the Linux `planes` array was inlined for the layout corruption instead.
-2. ~~**Fix Windows locales** (A2 / C7+P1)~~ — **done** `f0ad338`+`bb642a0`, but *not* by the method A2 prescribed. See the corrected A2. This also cleared the network-service crash loop, which was the PR's actual reported Windows failure.
-3. **Strip remaining debug scaffolding** (Section B) — log path/verbose/telemetry are **done** `c711f52`; still open: `TODO hgo` markers, WebGL URL, OSR-demo removal, editorconfig/reactiveui/chmod noise.
-4. **Verify the two `SharedTexture` mappings** (C9/C10) — accelerated paint is load-bearing and the author flagged uncertainty.
-5. **Decide F1/F2 consciously** — Windows sandbox posture; FirstPartySets/#3643 status.
+2. ~~**Fix Windows locales** (A2 / C7+P1)~~ — **done** `f0ad338`+`bb642a0`, but *not* by the method A2 prescribed.
+3. **Strip remaining debug scaffolding** — log path/verbose/telemetry **done** `c711f52`; the rest is hygiene, see above.
+4. ~~**Verify the two `SharedTexture` mappings** (C9/C10)~~ — done, both correct; refuted.
+5. **Decide F1/F2 consciously** — now items 2 and 3 above.
 6. **Wire or drop the observer classes** (C13); add `cef_settings_t.log_items` (C17).
-7. **Then** re-run the CEF-UPGRADE.md validation checklist (concurrent launch, DevTools, WebGL, deep pages, JS round-trips) on Windows + macOS + Linux. Note that "Windows starts" is now verified but "Windows *works*" is not — no page render, DevTools, WebGL or test run has been confirmed, and `win-arm64` is untested.
-8. Known-issue criticals #1/#2 are independent of the bump — schedule alongside, not necessarily blocking the bump merge.
+7. **Then** re-run the CEF-UPGRADE.md validation checklist on Windows + macOS + Linux.
+8. Known-issue criticals #1/#2 are independent of the bump.
+
+</details>
 
 Cross-references: [CEF-UPGRADE.md](CEF-UPGRADE.md) (bump process & validation), [KNOWN-ISSUES.md](KNOWN-ISSUES.md) (the 30-bug audit), [INTERNALS.md](INTERNALS.md).
