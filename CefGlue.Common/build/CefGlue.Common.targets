@@ -83,11 +83,13 @@
             </None>
         </ItemGroup>
     
-        <!-- CEF resolves the 'locales' folder relative to the directory libcef.dll is loaded
-             from, and that differs between build and publish: on build the native assets stay
-             under runtimes\<rid>\native, while a RID-specific publish flattens them to the app
-             root. Deploy the paks to whichever layout the operation produces - 44 MB a copy, so
-             not to both. -->
+        <!-- CEF resolves 'locales' relative to the directory libcef.dll was loaded from, and the
+             build output has two copies that different processes pick up: the browser process
+             loads runtimes\<rid>\native\libcef.dll, while the subprocess in CefGlueBrowserProcess\
+             resolves its own copy at the output root (see NativeLibsLoader). Both need a locales
+             folder beside them, which is what the block above already does for every other CEF
+             resource. A RID-specific publish flattens the two into one, so the root copy is
+             enough there. -->
         <ItemGroup>
             <CefRuntimeLocales Include="@(CefRuntimeWin64Locales)" Condition="'$(CefGlueTargetPlatform)' == 'win-x64'" />
             <CefRuntimeLocales Include="@(CefRuntimeWinArm64Locales)" Condition="'$(CefGlueTargetPlatform)' == 'win-arm64'" />
@@ -101,7 +103,7 @@
             <None Include="@(CefRuntimeLocales)">
                 <Visible>false</Visible>
                 <Link>$(OutputDirectory)locales\%(RecursiveDir)%(FileName)%(Extension)</Link>
-                <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
                 <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
                 <PublishState>Included</PublishState>
             </None>
