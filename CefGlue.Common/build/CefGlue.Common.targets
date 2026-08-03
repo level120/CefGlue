@@ -83,17 +83,26 @@
             </None>
         </ItemGroup>
     
+        <!-- CEF resolves the 'locales' folder relative to the directory libcef.dll is loaded
+             from, and that differs between build and publish: on build the native assets stay
+             under runtimes\<rid>\native, while a RID-specific publish flattens them to the app
+             root. Deploy the paks to whichever layout the operation produces - 44 MB a copy, so
+             not to both. -->
         <ItemGroup>
-            <None Include="@(CefRuntimeWin64Locales)" Condition="'$(CefGlueTargetPlatform)' == 'win-x64'">
+            <CefRuntimeLocales Include="@(CefRuntimeWin64Locales)" Condition="'$(CefGlueTargetPlatform)' == 'win-x64'" />
+            <CefRuntimeLocales Include="@(CefRuntimeWinArm64Locales)" Condition="'$(CefGlueTargetPlatform)' == 'win-arm64'" />
+
+            <None Include="@(CefRuntimeLocales)">
                 <Visible>false</Visible>
-                <Link>runtimes\win-x64\native\locales\%(RecursiveDir)%(FileName)%(Extension)</Link>
+                <Link>runtimes\$(CefGlueTargetPlatform)\native\locales\%(RecursiveDir)%(FileName)%(Extension)</Link>
                 <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-                <PublishState>Included</PublishState>
+                <CopyToPublishDirectory>Never</CopyToPublishDirectory>
             </None>
-            <None Include="@(CefRuntimeWinArm64Locales)"  Condition="'$(CefGlueTargetPlatform)' == 'win-arm64'">
+            <None Include="@(CefRuntimeLocales)">
                 <Visible>false</Visible>
-                <Link>runtimes\win-arm64\native\locales\%(RecursiveDir)%(FileName)%(Extension)</Link>
-                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+                <Link>$(OutputDirectory)locales\%(RecursiveDir)%(FileName)%(Extension)</Link>
+                <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+                <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
                 <PublishState>Included</PublishState>
             </None>
         </ItemGroup>
