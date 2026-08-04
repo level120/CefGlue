@@ -193,4 +193,7 @@ classdef = {
     'CefPreferenceObserver': { 'role': ROLE_HANDLER },
     'CefSettingObserver': { 'role': ROLE_HANDLER },
     'CefTaskManager': { 'role': ROLE_PROXY },
+
+    # 146
+    'CefV8BackingStore': { 'role': ROLE_PROXY },   # source=library; CefV8Value.CreateArrayBufferWithBackingStore가 참조
 }

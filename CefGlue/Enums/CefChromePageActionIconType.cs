@@ -46,6 +46,11 @@ namespace Xilium.CefGlue
         OptimizationGuide,
         CollaborationMessaging,
         ChangePassword,
+        LensOverlayHomework,              // CEF_API_ADDED(13800)
+        AiMode,                           // CEF_API_ADDED(14000)
+        ReadingMode,                      // CEF_API_ADDED(14400)
+        ContextualSidePanel,              // CEF_API_ADDED(14400)
+        JsOptimizations,                  // CEF_API_ADDED(14400)
         NumValues,
     }
 }

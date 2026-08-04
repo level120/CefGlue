@@ -22,13 +22,17 @@ namespace Xilium.CefGlue
         
         internal static CefClient FromNativeOrNull(cef_client_t* ptr)
         {
+            if (ptr == null) return null;
             CefClient value = null;
             bool found;
             lock (_roots)
             {
                 found = _roots.TryGetValue((IntPtr)ptr, out value);
-                // as we're getting the ref from the outside, it's our responsibility to decrement it
-                value.release(ptr);
+                if (found)
+                {
+                    // as we're getting the ref from the outside, it's our responsibility to decrement it
+                    value.release(ptr);
+                }
             }
             return found ? value : null;
         }

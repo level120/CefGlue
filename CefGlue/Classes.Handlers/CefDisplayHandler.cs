@@ -237,5 +237,55 @@
         /// </summary>
         protected virtual void OnMediaAccessChange(CefBrowser browser, bool hasVideoAccess, bool hasAudioAccess)
         { }
+
+
+        private int on_contents_bounds_change(cef_display_handler_t* self, cef_browser_t* browser, cef_rect_t* new_bounds)
+        {
+            CheckSelf(self);
+
+            var mBrowser = CefBrowser.FromNative(browser);
+            var mBounds = new CefRectangle(new_bounds->x, new_bounds->y, new_bounds->width, new_bounds->height);
+
+            return OnContentsBoundsChange(mBrowser, mBounds) ? 1 : 0;
+        }
+
+        /// <summary>
+        /// Called when the browser wants to move or resize the web contents to
+        /// |newBounds| in screen DIP coordinates (window.moveTo/resizeTo). Return
+        /// true if handled, false for default handling (default move/resize is only
+        /// provided with Views-hosted Chrome style browsers). (CEF 137+)
+        /// </summary>
+        protected virtual bool OnContentsBoundsChange(CefBrowser browser, CefRectangle newBounds)
+            => false;
+
+
+        private int get_root_window_screen_rect(cef_display_handler_t* self, cef_browser_t* browser, cef_rect_t* rect)
+        {
+            CheckSelf(self);
+
+            var mBrowser = CefBrowser.FromNative(browser);
+            var mRect = new CefRectangle(rect->x, rect->y, rect->width, rect->height);
+
+            if (GetRootWindowScreenRect(mBrowser, ref mRect))
+            {
+                rect->x = mRect.X;
+                rect->y = mRect.Y;
+                rect->width = mRect.Width;
+                rect->height = mRect.Height;
+                return 1;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Called to retrieve the external (client-provided) root window rectangle
+        /// in screen DIP coordinates. Only called for windowed browsers on Windows
+        /// and Linux. Return true if the rectangle was provided; false to use the
+        /// root window bounds on Windows or the browser content bounds on Linux.
+        /// (CEF 137+)
+        /// </summary>
+        protected virtual bool GetRootWindowScreenRect(CefBrowser browser, ref CefRectangle rect)
+            => false;
     }
 }

@@ -40,5 +40,8 @@ namespace Xilium.CefGlue
         WebAppInstallation = 1 << 22,
         WindowManagement = 1 << 23,
         FileSystemAccess = 1 << 24,
+        LocalNetworkAccess = 1 << 25,     // CEF_API_ADDED(13600)
+        LocalNetwork = 1 << 26,           // CEF_API_ADDED(14500)
+        LoopbackNetwork = 1 << 27,        // CEF_API_ADDED(14500)
     }
 }

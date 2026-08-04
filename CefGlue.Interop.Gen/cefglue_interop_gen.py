@@ -48,6 +48,9 @@ if not options.quiet:
 header = obj_header()
 excluded_files = ['cef_application_mac.h', 'cef_version.h']
 excluded_files += ['cef_thread.h', 'cef_waitable_event.h']
+# CEF 146: component updater (CRX 컴포넌트 갱신 — Widevine 등). 독립 표면이라 Level 0 제외
+# (다른 바인딩 클래스가 참조하지 않음 — CEF-UPGRADE.md 2.5 트리아지 기록).
+excluded_files += ['cef_component_updater.h']
 header.add_directory(options.cppheaderdir, excluded_files)
 
 writect = 0

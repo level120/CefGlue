@@ -4,16 +4,19 @@
         <DotnetVersion>net8.0</DotnetVersion>
         <LangVersion>latest</LangVersion>
         <AvaloniaVersion>11.0.9</AvaloniaVersion>
-        <CefRedistVersion>134.3.9</CefRedistVersion>
-        <CefRedistOSXVersion>134.3.9</CefRedistOSXVersion>
-        <CefRedistLinuxVersion>134.3.9</CefRedistLinuxVersion>
+        <CefRedistVersion>146.0.10</CefRedistVersion>
+        <!-- 주의: cef.redist.osx*/linux* 146은 nuget.org에 없다(OutSystems 게시 134에서 정지).
+             Vapor 경로는 코어만 쓰고 macOS 바이너리는 Spotify CDN에서 직접 조달한다
+             (Vapor.CefApp scripts/mac/fetch-cef.sh). 데모/Common 계층 osx/linux 빌드는 미지원 상태. -->
+        <CefRedistOSXVersion>146.0.10</CefRedistOSXVersion>
+        <CefRedistLinuxVersion>146.0.10</CefRedistLinuxVersion>
         <Platforms>x64;ARM64</Platforms>
         <Configurations>Debug;DebugWindowlessRender;Release;ReleaseWPFAvalonia</Configurations>
     </PropertyGroup>
 
     <PropertyGroup>
         <PackageOutputPath>$(MSBuildProjectDirectory)\..\Nuget\output</PackageOutputPath>
-        <Version>134.6998.178</Version>
+        <Version>146.7680.1</Version>
         <Authors>XiliumHQ,OutSystems</Authors>
         <Product>CefGlue</Product>
         <AssemblyTitle>CefGlue</AssemblyTitle>

@@ -464,6 +464,17 @@ namespace Xilium.CefGlue
 
         /// Content settings for access to the Controlled Frame API.
         ControlledFrame,
+        RevokedDisruptiveNotificationPermissions,
+        LocalNetworkAccess,
+        OnDeviceSpeechRecognitionLanguagesDownloaded,
+        InitializedTranslations,
+        SuspiciousNotificationIds,
+        GeolocationWithOptions,
+        DeviceAttributes,
+        PermissionActionsHistory,
+        SuspiciousNotificationShowOriginal,
+        LocalNetwork,
+        LoopbackNetwork,
 
         NumValues,
     }

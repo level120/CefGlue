@@ -41,6 +41,11 @@ namespace Xilium.CefGlue
         ChromeFirst,
 
         /// <summary>
+        /// The process is of an unknown type. (CEF_API_ADDED 13800)
+        /// </summary>
+        BadProcessType = 6,
+
+        /// <summary>
         /// A critical chrome file is missing.
         /// </summary>
         MissingData = 7,
@@ -92,7 +97,17 @@ namespace Xilium.CefGlue
         /// </summary>
         SystemResourceExhausted = 37,
 
-        ChromeLast = 38,
+        /// <summary>
+        /// The browser process exited because it was re-launched without elevation. (13800)
+        /// </summary>
+        NormalExitAutoDeElevated = 38,
+
+        /// <summary>
+        /// PartitionAlloc terminated another process on commit failure. (13900)
+        /// </summary>
+        TerminatedByOtherProcessOnCommitFailure = 39,
+
+        ChromeLast = 40,
 
         // The following values should be kept in sync with Chromium's
         // sandbox::TerminationCodes type.

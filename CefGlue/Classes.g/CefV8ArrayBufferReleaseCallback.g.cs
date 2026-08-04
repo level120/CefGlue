@@ -22,13 +22,17 @@ namespace Xilium.CefGlue
         
         internal static CefV8ArrayBufferReleaseCallback FromNativeOrNull(cef_v8_array_buffer_release_callback_t* ptr)
         {
+            if (ptr == null) return null;
             CefV8ArrayBufferReleaseCallback value = null;
             bool found;
             lock (_roots)
             {
                 found = _roots.TryGetValue((IntPtr)ptr, out value);
-                // as we're getting the ref from the outside, it's our responsibility to decrement it
-                value.release(ptr);
+                if (found)
+                {
+                    // as we're getting the ref from the outside, it's our responsibility to decrement it
+                    value.release(ptr);
+                }
             }
             return found ? value : null;
         }

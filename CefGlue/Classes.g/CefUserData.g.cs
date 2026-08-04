@@ -22,13 +22,17 @@ namespace Xilium.CefGlue
         
         internal static CefUserData FromNativeOrNull(cef_user_data_t* ptr)
         {
+            if (ptr == null) return null;
             CefUserData value = null;
             bool found;
             lock (_roots)
             {
                 found = _roots.TryGetValue((IntPtr)ptr, out value);
-                // as we're getting the ref from the outside, it's our responsibility to decrement it
-                value.release(ptr);
+                if (found)
+                {
+                    // as we're getting the ref from the outside, it's our responsibility to decrement it
+                    value.release(ptr);
+                }
             }
             return found ? value : null;
         }

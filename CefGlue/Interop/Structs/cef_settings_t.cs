@@ -44,6 +44,7 @@ namespace Xilium.CefGlue.Interop
         public cef_string_t chrome_policy_id;
         public int chrome_app_icon_id;
         public int disable_signal_handlers;
+        public int use_views_default_popup;    // CEF_API_ADDED(14600)
 
         #region Alloc & Free
         private static int _sizeof;

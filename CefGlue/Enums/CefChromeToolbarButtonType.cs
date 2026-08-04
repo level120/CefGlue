@@ -16,6 +16,10 @@ namespace Xilium.CefGlue
         Download,
         SendTabToSelf,
         SidePanel,
+        Media,
+        TabSearch,
+        BatterySaver,
+        Avatar,
         NumValues,
     }
 }

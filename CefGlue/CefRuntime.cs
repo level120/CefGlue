@@ -305,6 +305,16 @@
         }
 
         /// <summary>
+        /// Allows or blocks nested browser-process task execution during native message
+        /// loop re-entry (e.g. window resize/move on Windows). Added in CEF 146 —
+        /// see cef_task.h for usage restrictions.
+        /// </summary>
+        public static void SetNestableTasksAllowed(bool allowed)
+        {
+            libcef.set_nestable_tasks_allowed(allowed ? 1 : 0);
+        }
+
+        /// <summary>
         /// Set to true before calling Windows APIs like TrackPopupMenu that enter a
         /// modal message loop. Set to false after exiting the modal message loop.
         /// </summary>

@@ -547,13 +547,19 @@ def make_handler_g_body(cls):
     if schema.is_reversible(cls):
         result.append('internal static %s FromNativeOrNull(%s* ptr)' % (csname, iname))
         result.append('{')
+        # KNOWN-ISSUES #9: NULL 반환 경로(GetUserData/GetHandler 등)에서 value.release가
+        # NRE를 던지던 회귀 수정 — null ptr 조기 반환 + found일 때만 release.
+        result.append(indent + 'if (ptr == null) return null;')
         result.append(indent + '%s value = null;' % csname)
         result.append(indent + 'bool found;')
         result.append(indent + 'lock (_roots)')
         result.append(indent + '{')
         result.append(indent + indent + 'found = _roots.TryGetValue((IntPtr)ptr, out value);')
-        result.append(indent + indent + '// as we\'re getting the ref from the outside, it\'s our responsibility to decrement it')
-        result.append(indent + indent + 'value.release(ptr);')
+        result.append(indent + indent + 'if (found)')
+        result.append(indent + indent + '{')
+        result.append(indent + indent + indent + '// as we\'re getting the ref from the outside, it\'s our responsibility to decrement it')
+        result.append(indent + indent + indent + 'value.release(ptr);')
+        result.append(indent + indent + '}')
         result.append(indent + '}')
         result.append(indent + 'return found ? value : null;')
         result.append('}')
