@@ -87,6 +87,9 @@ c2cs_types = {
     'cef_basetime_t': 'CefBaseTime',
     'cef_time_t': 'CefTime',
     'cef_accelerated_paint_info_common_t': 'cef_accelerated_paint_info_common_t',
+    'cef_insets_t': 'cef_insets_t',
+    'cef_box_layout_settings_t': 'cef_box_layout_settings_t',
+    'cef_linux_window_properties_t': 'cef_linux_window_properties_t',
 
     # platform dependend structs
     'cef_main_args_t': 'cef_main_args_t',
@@ -187,6 +190,16 @@ c2cs_enumtypes = {
     'cef_color_variant_t': 'CefColorVariant',
     'cef_runtime_style_t': 'CefRuntimeStyle',
     'cef_task_type_t': 'CefTaskType',
+    # Views (146)
+    'cef_button_state_t': 'CefButtonState',
+    'cef_text_field_commands_t': 'CefTextFieldCommands',
+    'cef_menu_anchor_position_t': 'CefMenuAnchorPosition',
+    'cef_docking_mode_t': 'CefDockingMode',
+    'cef_show_state_t': 'CefShowState',
+    'cef_gesture_command_t': 'CefGestureCommand',
+    'cef_axis_alignment_t': 'CefAxisAlignment',
+    'cef_chrome_toolbar_type_t': 'CefChromeToolbarType',
+    'cef_text_style_t': 'CefTextStyle',
  }
 
 c2cs_structtypes = { }

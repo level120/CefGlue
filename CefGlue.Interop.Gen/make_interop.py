@@ -107,18 +107,24 @@ def get_base_func(cls, slot, name, cname):
             'iname': schema.get_iname(cls),
         }
 
-def get_base_funcs(cls):
-    baseClassName = cls.get_parent_capi_name() # FIXME: It should get real base class, not direct parent.
+def get_base_funcs(cls, owner = None):
+    # |cls|: 베이스(cef_base_*)를 직접 상속하는 클래스 — 참조 계수/스코프 판별용.
+    # |owner|: 실제로 구조체·래퍼가 생성되는 클래스(파생 체인의 말단). 베이스 함수의 self 형과
+    #          delegate 한정자는 owner 기준이어야 래퍼의 add_ref(cef_window_delegate_t*)와
+    #          cef_window_delegate_t.add_ref_delegate가 맞아떨어진다(Views 델리게이트 체인).
+    if owner is None:
+        owner = cls
+    baseClassName = cls.get_parent_capi_name()
     if baseClassName == "cef_base_t" or baseClassName == "cef_base_ref_counted_t":
         return [
-            get_base_func(cls, 0, 'AddRef', 'add_ref'),
-            get_base_func(cls, 1, 'Release', 'release'),
-            get_base_func(cls, 2, 'HasOneRef', 'has_one_ref'),
-            get_base_func(cls, 3, 'HasAtLeastOneRef', 'has_at_least_one_ref'),
+            get_base_func(owner, 0, 'AddRef', 'add_ref'),
+            get_base_func(owner, 1, 'Release', 'release'),
+            get_base_func(owner, 2, 'HasOneRef', 'has_one_ref'),
+            get_base_func(owner, 3, 'HasAtLeastOneRef', 'has_at_least_one_ref'),
             ]
     elif baseClassName == "cef_base_scoped_t":
         return [
-            get_base_func(cls, 0, 'Del', 'del'),
+            get_base_func(owner, 0, 'Del', 'del'),
             ]
     else:
         raise Exception("Unknown base class: %s." % baseClassName)
@@ -171,7 +177,7 @@ def get_funcs(cls, base = True, inherited = True):
     while True:
         classes.append(current_cls)
         if base and is_base_class(current_cls.get_parent_name()):
-            for func in get_base_funcs(current_cls):
+            for func in get_base_funcs(current_cls, cls):
                 funcs.append( func )
         if not inherited:
             break
@@ -351,10 +357,13 @@ def make_wrapper_g_file(cls):
             proxyBase = " : IDisposable"
         elif isScopedImpl:
             proxyBase = ""
-        elif cls.get_parent_capi_name() == "cef_preference_manager_t":
-            proxyBase = " : CefPreferenceManager"
         else:
-            raise Exception("Unknown base class type.")
+            # 비-베이스 부모(CefPreferenceManager, Views 계층 CefView/CefPanel/CefLayout/CefButton …):
+            # C# 상속으로 표현한다. 부모는 schema에서 abstract(비봉인)여야 한다.
+            base_cls = cls.parent.get_class(cls.parent_name)
+            if base_cls is None:
+                raise Exception("Unknown base class type: %s." % cls.get_parent_name())
+            proxyBase = " : " + schema.cpp2csname(base_cls.get_name())
         body.append(('public ' + maybeSealedModifier + 'unsafe partial class %s' + proxyBase) % schema.cpp2csname(cls.get_name()))
         body.append('{')
         body.append( indent + ('\n' + indent + indent).join( make_proxy_g_body(cls) ) )
@@ -449,8 +458,8 @@ def make_proxy_g_body(cls):
         result.append('    : base((%s*)ptr) {}' % base_ptr_type)
     result.append('')
 
-    if cls.get_parent_capi_name() == "cef_preference_manager_t":
-        # no-op
+    if not isImpl:
+        # 파생 프록시 — Dispose/AddRef/Release는 최상위(impl) 클래스가 소유한다.
         pass
     elif isRefCountedImpl:
         # disposable

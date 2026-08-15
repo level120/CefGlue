@@ -10,3 +10,6 @@ include/views/
 # Generated boilerplates
 Classes.Handlers.tmpl
 Classes.Proxies.tmpl
+
+# Views (146+, OOP 자체창 T1) — 파싱 대상이므로 추적한다
+!include/views/

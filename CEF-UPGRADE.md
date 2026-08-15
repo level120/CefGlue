@@ -57,7 +57,7 @@ For any target ≤134, branch `RDEV-8412-bump-cef-to-134.3.9` already contains t
 Download the **minimal distribution** for the target version from the CEF builds site (headers are architecture-independent — wiki step 4) and replace the tracked set under `CefGlue.Interop.Gen\include\`:
 
 - Replace the 121 tracked files; `git add`/`git rm` so additions/deletions are tracked.
-- Respect `CefGlue.Interop.Gen\.gitignore`: do **not** add `include/base/`, `include/capi/`, `include/test/`, `include/views/`, `cef_pack_resources.h`, `cef_pack_strings.h`. Exception: `include/base/internal/cef_net_error_list.h` is deliberately un-ignored (it is the source for `CefGlue\Enums\CefErrorCode.cs`).
+- Respect `CefGlue.Interop.Gen\.gitignore`: do **not** add `include/base/`, `include/capi/`, `include/test/`, `cef_pack_resources.h`, `cef_pack_strings.h`. Exceptions: `include/base/internal/cef_net_error_list.h` is deliberately un-ignored (it is the source for `CefGlue\Enums\CefErrorCode.cs`), and **`include/views/` is tracked and parsed since the Vapor OOP work on the 146 branch** (21 C++ headers; `cefglue_interop_gen.py` adds that directory explicitly). Refresh them from the *same* CEF commit as the root headers — Views structs are flattened inheritance chains, so a header/binary mismatch shifts every vtable slot.
 - **Must** update `include\cef_version.h` and `include\cef_api_hash.h` — they feed `version.g.cs` even though `cef_version.h` is excluded from class parsing. CEF ≥126 replaces `cef_api_hash.h` semantics with `include\cef_api_versions.h` (see the ≥126 row in 2.1).
 - `include/internal/` and `include/wrapper/` are **never parsed** (`add_directory` is non-recursive, `cef_parser.py:563`) but must be refreshed anyway — the manual struct-mirror porting in Phase 3 diffs against them.
 
@@ -126,9 +126,15 @@ The correct options are **derivable, not guesswork**. The ground truth is the `/
 | `name` | Only to fix ugly default C#-ization of acronyms. | 11 existing entries, e.g. `CefDOMNode` → `CefDomNode`, `CefURLRequest` → `CefUrlRequest` |
 | `reversible: True` | Handlers only. Needed iff some **library-side API returns this client-side type back** to managed code — the generated `FromNative` must find the original managed instance in `_roots`. Rule: grep the new headers for methods of `source=library` classes returning the class type. | All 7 existing entries follow it: `CefClient` (← `CefBrowserHost::GetClient`), `CefV8Handler` (← `CefV8Value::GetFunctionHandler`), `CefURLRequestClient`, `CefRequestContextHandler`, `CefV8ArrayBufferReleaseCallback`, `CefUserData`, `CefExtensionHandler` |
 | `autodispose: True` | Handlers only. One-shot visitor/callback objects that CEF consumes and releases without ever handing back — the managed wrapper disposes itself when the native refcount hits 0. Rule: short-lived, passed in, never stored/returned. | The 9 existing entries are all visitors/callbacks: `CefStringVisitor`, `CefCookieVisitor`, `CefResourceHandler`, `CefSetCookieCallback`, … |
-| `abstract: True` | Proxies only. The class is a base of another bound class in CEF's own hierarchy (generator emits an unsealed class with `private protected` members). | Only `CefPreferenceManager` (base of `cef_request_context_t` since CEF 108) |
+| `abstract: True` | Proxies only. The class is a base of another bound class in CEF's own hierarchy (generator emits an unsealed class with `private protected` members and the derived proxy chains its ctor to it). | `CefPreferenceManager` (base of `cef_request_context_t` since CEF 108); Views bases `CefView`, `CefPanel`, `CefButton`, `CefLabelButton`, `CefLayout` (146 branch) |
 
 When still unsure, find the closest analogous class in `schema_cef3.py` (it is organized by CEF release with comments) and copy its shape.
+
+**Inheritance chains (Views, 146 branch).** The generator flattens CEF's C-struct inheritance for *every* class (`_base` = `cef_base_ref_counted_t`, then all inherited slots in declaration order — layout-identical to the nested C structs). On top of that:
+
+- **Proxies** get real C# inheritance (`CefWindow : CefPanel : CefView`); `make_interop.py` derives `proxyBase` from the parsed parent (no longer hard-coded to `CefPreferenceManager`). Only the top (`isImpl`) class owns `_self`/`Dispose`; derived classes cast `_self` (`(cef_window_t*)_self`).
+- **Handlers** (delegates) are emitted as independent flattened classes — `CefWindowDelegate` carries the 11 `CefViewDelegate` slots itself, no C# base. Base ref-count functions are owned by the concrete class (`get_base_funcs(cls, owner)`), otherwise the `add_ref(cef_window_delegate_t*)` glue does not match `cef_view_delegate_t.add_ref_delegate`. Hand-written glue for inherited slots receives the *declaring* struct pointer (`cef_view_delegate_t* self`) — cast for `CheckSelf`.
+- Verify slot counts against the binary distribution's `include/capi/views/*_capi.h` (`grep -c CEF_CALLBACK`): view 52 / panel +12 / window +42 / browser_view +4 / view_delegate 11 / window_delegate +23 / browser_view_delegate +10 / display 7 / textfield +31 / overlay 19 (146.0.10).
 
 ### 2.5 New-feature triage — skip, bind, or integrate?
 

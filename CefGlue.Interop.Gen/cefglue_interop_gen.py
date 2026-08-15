@@ -52,6 +52,9 @@ excluded_files += ['cef_thread.h', 'cef_waitable_event.h']
 # (다른 바인딩 클래스가 참조하지 않음 — CEF-UPGRADE.md 2.5 트리아지 기록).
 excluded_files += ['cef_component_updater.h']
 header.add_directory(options.cppheaderdir, excluded_files)
+# CEF Views framework (include/views/*.h) — OOP 자체창 전환(docs/oop-plan.md T1)부터 파싱한다.
+# 헤더는 CEF 핀 커밋(cef_version.h의 CEF_COMMIT_HASH)과 같은 리비전이어야 한다.
+header.add_directory(options.cppheaderdir + '/views', excluded_files)
 
 writect = 0
 

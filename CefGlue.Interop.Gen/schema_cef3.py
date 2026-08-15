@@ -196,4 +196,30 @@ classdef = {
 
     # 146
     'CefV8BackingStore': { 'role': ROLE_PROXY },   # source=library; CefV8Value.CreateArrayBufferWithBackingStore가 참조
+
+    # 146 — Views framework (OOP 자체창 전환 T1, docs/oop-plan.md D1).
+    # 상속 체인(CefWindow : CefPanel : CefView 등)은 프록시는 C# 상속, 델리게이트(핸들러)는
+    # 슬롯을 평탄화해 독립 클래스로 생성한다(make_interop.py 일반화 참고).
+    'CefView': { 'role': ROLE_PROXY, 'abstract': True },
+    'CefPanel': { 'role': ROLE_PROXY, 'abstract': True },
+    'CefWindow': { 'role': ROLE_PROXY },
+    'CefBrowserView': { 'role': ROLE_PROXY },
+    'CefButton': { 'role': ROLE_PROXY, 'abstract': True },
+    'CefLabelButton': { 'role': ROLE_PROXY, 'abstract': True },
+    'CefMenuButton': { 'role': ROLE_PROXY },
+    'CefMenuButtonPressedLock': { 'role': ROLE_PROXY },
+    'CefTextfield': { 'role': ROLE_PROXY },
+    'CefScrollView': { 'role': ROLE_PROXY },
+    'CefLayout': { 'role': ROLE_PROXY, 'abstract': True },
+    'CefBoxLayout': { 'role': ROLE_PROXY },
+    'CefFillLayout': { 'role': ROLE_PROXY },
+    'CefDisplay': { 'role': ROLE_PROXY },
+    'CefOverlayController': { 'role': ROLE_PROXY },
+    'CefViewDelegate': { 'role': ROLE_HANDLER },
+    'CefPanelDelegate': { 'role': ROLE_HANDLER },
+    'CefWindowDelegate': { 'role': ROLE_HANDLER },
+    'CefBrowserViewDelegate': { 'role': ROLE_HANDLER },
+    'CefButtonDelegate': { 'role': ROLE_HANDLER },
+    'CefMenuButtonDelegate': { 'role': ROLE_HANDLER },
+    'CefTextfieldDelegate': { 'role': ROLE_HANDLER },
 }
