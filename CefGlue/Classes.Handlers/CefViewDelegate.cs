@@ -11,14 +11,16 @@
     /// The methods of this class will be called on the browser process UI thread
     /// unless otherwise indicated.
     /// (Views — CEF 146. Delegate inheritance chain is flattened per class: this
-    /// class carries the CefViewDelegate slots directly.)
+    /// class carries the CefViewDelegate slots directly. View/Window/BrowserView
+    /// arguments may be null — CEF queries some delegate methods, e.g.
+    /// AllowPictureInPictureWithoutUserActivation, before the view exists.)
     /// </summary>
     public abstract unsafe partial class CefViewDelegate
     {
         private cef_size_t get_preferred_size(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var size = GetPreferredSize(m_view);
             return new cef_size_t(size.Width, size.Height);
         }
@@ -33,7 +35,7 @@
         private cef_size_t get_minimum_size(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var size = GetMinimumSize(m_view);
             return new cef_size_t(size.Width, size.Height);
         }
@@ -45,7 +47,7 @@
         private cef_size_t get_maximum_size(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var size = GetMaximumSize(m_view);
             return new cef_size_t(size.Width, size.Height);
         }
@@ -57,7 +59,7 @@
         private int get_height_for_width(cef_view_delegate_t* self, cef_view_t* view, int width)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             return GetHeightForWidth(m_view, width);
         }
 
@@ -71,7 +73,7 @@
         private void on_parent_view_changed(cef_view_delegate_t* self, cef_view_t* view, int added, cef_view_t* parent)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var m_parent = CefView.FromNativeOrNull(parent);
             OnParentViewChanged(m_view, added != 0, m_parent);
         }
@@ -87,7 +89,7 @@
         private void on_child_view_changed(cef_view_delegate_t* self, cef_view_t* view, int added, cef_view_t* child)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var m_child = CefView.FromNativeOrNull(child);
             OnChildViewChanged(m_view, added != 0, m_child);
         }
@@ -103,7 +105,7 @@
         private void on_window_changed(cef_view_delegate_t* self, cef_view_t* view, int added)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnWindowChanged(m_view, added != 0);
         }
 
@@ -114,7 +116,7 @@
         private void on_layout_changed(cef_view_delegate_t* self, cef_view_t* view, cef_rect_t* new_bounds)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var m_bounds = new CefRectangle(new_bounds->x, new_bounds->y, new_bounds->width, new_bounds->height);
             OnLayoutChanged(m_view, m_bounds);
         }
@@ -126,7 +128,7 @@
         private void on_focus(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnFocus(m_view);
         }
 
@@ -137,7 +139,7 @@
         private void on_blur(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnBlur(m_view);
         }
 
@@ -148,7 +150,7 @@
         private void on_theme_changed(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnThemeChanged(m_view);
         }
 

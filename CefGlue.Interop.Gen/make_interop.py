@@ -190,11 +190,28 @@ def get_funcs(cls, base = True, inherited = True):
         current_cls = classes.pop()
         if current_cls is None:
             break
-        for func in current_cls.get_virtual_funcs():
+        for func in get_virtual_funcs_in_abi_order(current_cls):
             funcs.append( get_func_parts(func, i) )
             i += 1
 
     return funcs
+
+def get_virtual_funcs_in_abi_order(cls):
+    # CEF API 버전제(126+): C API 구조체는 선언 순서가 아니라 "추가된 API 버전" 순으로 슬롯을 놓는다 —
+    # 버전 표기 없는 함수가 선언 순서대로 먼저, 그 뒤에 /*--cef(added=N)--*/ 함수가 N 오름차순
+    # (같은 N 안에서는 선언 순서). CEF translator(cef_parser.obj_class.get_virtual_funcs(version))와
+    # 동일 규칙. 이를 무시하면 added 함수 뒤의 모든 슬롯이 어긋난다(146 브랜치에서
+    # cef_command_line_t.remove_switch / cef_download_item_t.is_paused /
+    # cef_request_context_t.clear_http_cache / cef_browser_view_delegate_t의 PiP 2종이 실제로 어긋나
+    # 있었음 — cef.sdk 146.0.10 capi 헤더 대조로 발견, docs/oop-plan.md S1).
+    # removed= 함수는 현재 벤더링 헤더에 없다 — 생기면 CEF_API_VERSION 기준으로 제외해야 한다.
+    def added_version(func):
+        v = func.get_attrib('added')
+        try:
+            return int(v) if v else 0
+        except (TypeError, ValueError):
+            return 0
+    return sorted(cls.get_virtual_funcs(), key=added_version)  # sorted()는 안정 정렬
 
 def get_top_base_class_name(cls):
     while cls is not None:

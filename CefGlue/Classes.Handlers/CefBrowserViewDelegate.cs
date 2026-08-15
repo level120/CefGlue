@@ -11,14 +11,16 @@
     /// The methods of this class will be called on the browser process UI thread
     /// unless otherwise indicated.
     /// (Views — CEF 146. Delegate inheritance chain is flattened per class: this
-    /// class carries the CefViewDelegate slots directly.)
+    /// class carries the CefViewDelegate slots directly. View/Window/BrowserView
+    /// arguments may be null — CEF queries some delegate methods, e.g.
+    /// AllowPictureInPictureWithoutUserActivation, before the view exists.)
     /// </summary>
     public abstract unsafe partial class CefBrowserViewDelegate
     {
         private cef_size_t get_preferred_size(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var size = GetPreferredSize(m_view);
             return new cef_size_t(size.Width, size.Height);
         }
@@ -33,7 +35,7 @@
         private cef_size_t get_minimum_size(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var size = GetMinimumSize(m_view);
             return new cef_size_t(size.Width, size.Height);
         }
@@ -45,7 +47,7 @@
         private cef_size_t get_maximum_size(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var size = GetMaximumSize(m_view);
             return new cef_size_t(size.Width, size.Height);
         }
@@ -57,7 +59,7 @@
         private int get_height_for_width(cef_view_delegate_t* self, cef_view_t* view, int width)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             return GetHeightForWidth(m_view, width);
         }
 
@@ -71,7 +73,7 @@
         private void on_parent_view_changed(cef_view_delegate_t* self, cef_view_t* view, int added, cef_view_t* parent)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var m_parent = CefView.FromNativeOrNull(parent);
             OnParentViewChanged(m_view, added != 0, m_parent);
         }
@@ -87,7 +89,7 @@
         private void on_child_view_changed(cef_view_delegate_t* self, cef_view_t* view, int added, cef_view_t* child)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var m_child = CefView.FromNativeOrNull(child);
             OnChildViewChanged(m_view, added != 0, m_child);
         }
@@ -103,7 +105,7 @@
         private void on_window_changed(cef_view_delegate_t* self, cef_view_t* view, int added)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnWindowChanged(m_view, added != 0);
         }
 
@@ -114,7 +116,7 @@
         private void on_layout_changed(cef_view_delegate_t* self, cef_view_t* view, cef_rect_t* new_bounds)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var m_bounds = new CefRectangle(new_bounds->x, new_bounds->y, new_bounds->width, new_bounds->height);
             OnLayoutChanged(m_view, m_bounds);
         }
@@ -126,7 +128,7 @@
         private void on_focus(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnFocus(m_view);
         }
 
@@ -137,7 +139,7 @@
         private void on_blur(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnBlur(m_view);
         }
 
@@ -148,7 +150,7 @@
         private void on_theme_changed(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_browser_view_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnThemeChanged(m_view);
         }
 
@@ -163,7 +165,7 @@
         private void on_browser_created(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view, cef_browser_t* browser)
         {
             CheckSelf(self);
-            OnBrowserCreated(CefBrowserView.FromNative(browser_view), CefBrowser.FromNative(browser));
+            OnBrowserCreated(CefBrowserView.FromNativeOrNull(browser_view), CefBrowser.FromNative(browser));
         }
 
         /// <summary>
@@ -178,7 +180,7 @@
         private void on_browser_destroyed(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view, cef_browser_t* browser)
         {
             CheckSelf(self);
-            OnBrowserDestroyed(CefBrowserView.FromNative(browser_view), CefBrowser.FromNative(browser));
+            OnBrowserDestroyed(CefBrowserView.FromNativeOrNull(browser_view), CefBrowser.FromNative(browser));
         }
 
         /// <summary>
@@ -195,7 +197,7 @@
             CheckSelf(self);
             var m_settings = new CefBrowserSettings(settings);
             var m_client = CefClient.FromNativeOrNull(client);
-            var result = GetDelegateForPopupBrowserView(CefBrowserView.FromNative(browser_view), m_settings, m_client, is_devtools != 0);
+            var result = GetDelegateForPopupBrowserView(CefBrowserView.FromNativeOrNull(browser_view), m_settings, m_client, is_devtools != 0);
             m_settings.Dispose();
             return result != null ? result.ToNative() : null;
         }
@@ -213,7 +215,7 @@
         private int on_popup_browser_view_created(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view, cef_browser_view_t* popup_browser_view, int is_devtools)
         {
             CheckSelf(self);
-            return OnPopupBrowserViewCreated(CefBrowserView.FromNative(browser_view), CefBrowserView.FromNative(popup_browser_view), is_devtools != 0) ? 1 : 0;
+            return OnPopupBrowserViewCreated(CefBrowserView.FromNativeOrNull(browser_view), CefBrowserView.FromNativeOrNull(popup_browser_view), is_devtools != 0) ? 1 : 0;
         }
 
         /// <summary>
@@ -231,7 +233,7 @@
         private CefChromeToolbarType get_chrome_toolbar_type(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view)
         {
             CheckSelf(self);
-            return GetChromeToolbarType(CefBrowserView.FromNative(browser_view));
+            return GetChromeToolbarType(CefBrowserView.FromNativeOrNull(browser_view));
         }
 
         /// <summary>
@@ -245,7 +247,7 @@
         private int use_frameless_window_for_picture_in_picture(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view)
         {
             CheckSelf(self);
-            return UseFramelessWindowForPictureInPicture(CefBrowserView.FromNative(browser_view)) ? 1 : 0;
+            return UseFramelessWindowForPictureInPicture(CefBrowserView.FromNativeOrNull(browser_view)) ? 1 : 0;
         }
 
         /// <summary>
@@ -259,7 +261,7 @@
         private int allow_move_for_picture_in_picture(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view)
         {
             CheckSelf(self);
-            return AllowMoveForPictureInPicture(CefBrowserView.FromNative(browser_view)) ? 1 : 0;
+            return AllowMoveForPictureInPicture(CefBrowserView.FromNativeOrNull(browser_view)) ? 1 : 0;
         }
 
         /// <summary>
@@ -272,7 +274,7 @@
         private int allow_picture_in_picture_without_user_activation(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view)
         {
             CheckSelf(self);
-            return AllowPictureInPictureWithoutUserActivation(CefBrowserView.FromNative(browser_view)) ? 1 : 0;
+            return AllowPictureInPictureWithoutUserActivation(CefBrowserView.FromNativeOrNull(browser_view)) ? 1 : 0;
         }
 
         /// <summary>
@@ -285,7 +287,7 @@
         private int on_gesture_command(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view, CefGestureCommand gesture_command)
         {
             CheckSelf(self);
-            return OnGestureCommand(CefBrowserView.FromNative(browser_view), gesture_command) ? 1 : 0;
+            return OnGestureCommand(CefBrowserView.FromNativeOrNull(browser_view), gesture_command) ? 1 : 0;
         }
 
         /// <summary>

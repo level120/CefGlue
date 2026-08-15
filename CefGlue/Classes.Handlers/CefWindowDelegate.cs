@@ -11,14 +11,16 @@
     /// The methods of this class will be called on the browser process UI thread
     /// unless otherwise indicated.
     /// (Views — CEF 146. Delegate inheritance chain is flattened per class: this
-    /// class carries the CefViewDelegate slots (via CefPanelDelegate) directly.)
+    /// class carries the CefViewDelegate slots (via CefPanelDelegate) directly. View/Window/BrowserView
+    /// arguments may be null — CEF queries some delegate methods, e.g.
+    /// AllowPictureInPictureWithoutUserActivation, before the view exists.)
     /// </summary>
     public abstract unsafe partial class CefWindowDelegate
     {
         private cef_size_t get_preferred_size(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var size = GetPreferredSize(m_view);
             return new cef_size_t(size.Width, size.Height);
         }
@@ -33,7 +35,7 @@
         private cef_size_t get_minimum_size(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var size = GetMinimumSize(m_view);
             return new cef_size_t(size.Width, size.Height);
         }
@@ -45,7 +47,7 @@
         private cef_size_t get_maximum_size(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var size = GetMaximumSize(m_view);
             return new cef_size_t(size.Width, size.Height);
         }
@@ -57,7 +59,7 @@
         private int get_height_for_width(cef_view_delegate_t* self, cef_view_t* view, int width)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             return GetHeightForWidth(m_view, width);
         }
 
@@ -71,7 +73,7 @@
         private void on_parent_view_changed(cef_view_delegate_t* self, cef_view_t* view, int added, cef_view_t* parent)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var m_parent = CefView.FromNativeOrNull(parent);
             OnParentViewChanged(m_view, added != 0, m_parent);
         }
@@ -87,7 +89,7 @@
         private void on_child_view_changed(cef_view_delegate_t* self, cef_view_t* view, int added, cef_view_t* child)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var m_child = CefView.FromNativeOrNull(child);
             OnChildViewChanged(m_view, added != 0, m_child);
         }
@@ -103,7 +105,7 @@
         private void on_window_changed(cef_view_delegate_t* self, cef_view_t* view, int added)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnWindowChanged(m_view, added != 0);
         }
 
@@ -114,7 +116,7 @@
         private void on_layout_changed(cef_view_delegate_t* self, cef_view_t* view, cef_rect_t* new_bounds)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             var m_bounds = new CefRectangle(new_bounds->x, new_bounds->y, new_bounds->width, new_bounds->height);
             OnLayoutChanged(m_view, m_bounds);
         }
@@ -126,7 +128,7 @@
         private void on_focus(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnFocus(m_view);
         }
 
@@ -137,7 +139,7 @@
         private void on_blur(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnBlur(m_view);
         }
 
@@ -148,7 +150,7 @@
         private void on_theme_changed(cef_view_delegate_t* self, cef_view_t* view)
         {
             CheckSelf((cef_window_delegate_t*)self);
-            var m_view = CefView.FromNative(view);
+            var m_view = CefView.FromNativeOrNull(view);
             OnThemeChanged(m_view);
         }
 
@@ -163,7 +165,7 @@
         private void on_window_created(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            OnWindowCreated(CefWindow.FromNative(window));
+            OnWindowCreated(CefWindow.FromNativeOrNull(window));
         }
 
         /// <summary>Called when |window| is created.</summary>
@@ -173,7 +175,7 @@
         private void on_window_closing(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            OnWindowClosing(CefWindow.FromNative(window));
+            OnWindowClosing(CefWindow.FromNativeOrNull(window));
         }
 
         /// <summary>Called when |window| is closing.</summary>
@@ -183,7 +185,7 @@
         private void on_window_destroyed(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            OnWindowDestroyed(CefWindow.FromNative(window));
+            OnWindowDestroyed(CefWindow.FromNativeOrNull(window));
         }
 
         /// <summary>
@@ -197,7 +199,7 @@
         private void on_window_activation_changed(cef_window_delegate_t* self, cef_window_t* window, int active)
         {
             CheckSelf(self);
-            OnWindowActivationChanged(CefWindow.FromNative(window), active != 0);
+            OnWindowActivationChanged(CefWindow.FromNativeOrNull(window), active != 0);
         }
 
         /// <summary>Called when |window| is activated or deactivated.</summary>
@@ -208,7 +210,7 @@
         {
             CheckSelf(self);
             var m_bounds = new CefRectangle(new_bounds->x, new_bounds->y, new_bounds->width, new_bounds->height);
-            OnWindowBoundsChanged(CefWindow.FromNative(window), m_bounds);
+            OnWindowBoundsChanged(CefWindow.FromNativeOrNull(window), m_bounds);
         }
 
         /// <summary>Called when |window| bounds have changed. |newBounds| is in DIP screen coordinates.</summary>
@@ -218,7 +220,7 @@
         private void on_window_fullscreen_transition(cef_window_delegate_t* self, cef_window_t* window, int is_completed)
         {
             CheckSelf(self);
-            OnWindowFullscreenTransition(CefWindow.FromNative(window), is_completed != 0);
+            OnWindowFullscreenTransition(CefWindow.FromNativeOrNull(window), is_completed != 0);
         }
 
         /// <summary>
@@ -236,7 +238,7 @@
             CheckSelf(self);
             var m_isMenu = *is_menu != 0;
             var m_canActivateMenu = *can_activate_menu != 0;
-            var parent = GetParentWindow(CefWindow.FromNative(window), ref m_isMenu, ref m_canActivateMenu);
+            var parent = GetParentWindow(CefWindow.FromNativeOrNull(window), ref m_isMenu, ref m_canActivateMenu);
             *is_menu = m_isMenu ? 1 : 0;
             *can_activate_menu = m_canActivateMenu ? 1 : 0;
             return parent != null ? parent.ToNative() : null;
@@ -256,7 +258,7 @@
         private int is_window_modal_dialog(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            return IsWindowModalDialog(CefWindow.FromNative(window)) ? 1 : 0;
+            return IsWindowModalDialog(CefWindow.FromNativeOrNull(window)) ? 1 : 0;
         }
 
         /// <summary>
@@ -273,7 +275,7 @@
         private cef_rect_t get_initial_bounds(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            var r = GetInitialBounds(CefWindow.FromNative(window));
+            var r = GetInitialBounds(CefWindow.FromNativeOrNull(window));
             return new cef_rect_t(r.X, r.Y, r.Width, r.Height);
         }
 
@@ -289,7 +291,7 @@
         private CefShowState get_initial_show_state(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            return GetInitialShowState(CefWindow.FromNative(window));
+            return GetInitialShowState(CefWindow.FromNativeOrNull(window));
         }
 
         /// <summary>Return the initial show state for |window|.</summary>
@@ -299,7 +301,7 @@
         private int is_frameless(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            return IsFrameless(CefWindow.FromNative(window)) ? 1 : 0;
+            return IsFrameless(CefWindow.FromNativeOrNull(window)) ? 1 : 0;
         }
 
         /// <summary>
@@ -313,7 +315,7 @@
         private int with_standard_window_buttons(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            return WithStandardWindowButtons(CefWindow.FromNative(window)) ? 1 : 0;
+            return WithStandardWindowButtons(CefWindow.FromNativeOrNull(window)) ? 1 : 0;
         }
 
         /// <summary>
@@ -328,7 +330,7 @@
         {
             CheckSelf(self);
             var m_height = *titlebar_height;
-            if (GetTitlebarHeight(CefWindow.FromNative(window), ref m_height))
+            if (GetTitlebarHeight(CefWindow.FromNativeOrNull(window), ref m_height))
             {
                 *titlebar_height = m_height;
                 return 1;
@@ -349,7 +351,7 @@
         private CefState accepts_first_mouse(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            return AcceptsFirstMouse(CefWindow.FromNative(window));
+            return AcceptsFirstMouse(CefWindow.FromNativeOrNull(window));
         }
 
         /// <summary>
@@ -363,7 +365,7 @@
         private int can_resize(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            return CanResize(CefWindow.FromNative(window)) ? 1 : 0;
+            return CanResize(CefWindow.FromNativeOrNull(window)) ? 1 : 0;
         }
 
         /// <summary>Return true if |window| can be resized.</summary>
@@ -373,7 +375,7 @@
         private int can_maximize(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            return CanMaximize(CefWindow.FromNative(window)) ? 1 : 0;
+            return CanMaximize(CefWindow.FromNativeOrNull(window)) ? 1 : 0;
         }
 
         /// <summary>Return true if |window| can be maximized.</summary>
@@ -383,7 +385,7 @@
         private int can_minimize(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            return CanMinimize(CefWindow.FromNative(window)) ? 1 : 0;
+            return CanMinimize(CefWindow.FromNativeOrNull(window)) ? 1 : 0;
         }
 
         /// <summary>Return true if |window| can be minimized.</summary>
@@ -393,7 +395,7 @@
         private int can_close(cef_window_delegate_t* self, cef_window_t* window)
         {
             CheckSelf(self);
-            return CanClose(CefWindow.FromNative(window)) ? 1 : 0;
+            return CanClose(CefWindow.FromNativeOrNull(window)) ? 1 : 0;
         }
 
         /// <summary>
@@ -406,7 +408,7 @@
         private int on_accelerator(cef_window_delegate_t* self, cef_window_t* window, int command_id)
         {
             CheckSelf(self);
-            return OnAccelerator(CefWindow.FromNative(window), command_id) ? 1 : 0;
+            return OnAccelerator(CefWindow.FromNativeOrNull(window), command_id) ? 1 : 0;
         }
 
         /// <summary>
@@ -421,7 +423,7 @@
         {
             CheckSelf(self);
             var m_event = CefKeyEvent.FromNative(@event);
-            return OnKeyEvent(CefWindow.FromNative(window), m_event) ? 1 : 0;
+            return OnKeyEvent(CefWindow.FromNativeOrNull(window), m_event) ? 1 : 0;
         }
 
         /// <summary>
@@ -435,7 +437,7 @@
         private void on_theme_colors_changed(cef_window_delegate_t* self, cef_window_t* window, int chrome_theme)
         {
             CheckSelf(self);
-            OnThemeColorsChanged(CefWindow.FromNative(window), chrome_theme != 0);
+            OnThemeColorsChanged(CefWindow.FromNativeOrNull(window), chrome_theme != 0);
         }
 
         /// <summary>

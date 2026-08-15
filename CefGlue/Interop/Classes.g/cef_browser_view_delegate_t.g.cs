@@ -30,10 +30,10 @@ namespace Xilium.CefGlue.Interop
         internal IntPtr _on_popup_browser_view_created;
         internal IntPtr _get_chrome_toolbar_type;
         internal IntPtr _use_frameless_window_for_picture_in_picture;
-        internal IntPtr _allow_move_for_picture_in_picture;
-        internal IntPtr _allow_picture_in_picture_without_user_activation;
         internal IntPtr _on_gesture_command;
         internal IntPtr _get_browser_runtime_style;
+        internal IntPtr _allow_move_for_picture_in_picture;
+        internal IntPtr _allow_picture_in_picture_without_user_activation;
         
         [UnmanagedFunctionPointer(libcef.CEF_CALLBACK)]
         #if !DEBUG
@@ -165,18 +165,6 @@ namespace Xilium.CefGlue.Interop
         #if !DEBUG
         [SuppressUnmanagedCodeSecurity]
         #endif
-        internal delegate int allow_move_for_picture_in_picture_delegate(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view);
-        
-        [UnmanagedFunctionPointer(libcef.CEF_CALLBACK)]
-        #if !DEBUG
-        [SuppressUnmanagedCodeSecurity]
-        #endif
-        internal delegate int allow_picture_in_picture_without_user_activation_delegate(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view);
-        
-        [UnmanagedFunctionPointer(libcef.CEF_CALLBACK)]
-        #if !DEBUG
-        [SuppressUnmanagedCodeSecurity]
-        #endif
         internal delegate int on_gesture_command_delegate(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view, CefGestureCommand gesture_command);
         
         [UnmanagedFunctionPointer(libcef.CEF_CALLBACK)]
@@ -184,6 +172,18 @@ namespace Xilium.CefGlue.Interop
         [SuppressUnmanagedCodeSecurity]
         #endif
         internal delegate CefRuntimeStyle get_browser_runtime_style_delegate(cef_browser_view_delegate_t* self);
+        
+        [UnmanagedFunctionPointer(libcef.CEF_CALLBACK)]
+        #if !DEBUG
+        [SuppressUnmanagedCodeSecurity]
+        #endif
+        internal delegate int allow_move_for_picture_in_picture_delegate(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view);
+        
+        [UnmanagedFunctionPointer(libcef.CEF_CALLBACK)]
+        #if !DEBUG
+        [SuppressUnmanagedCodeSecurity]
+        #endif
+        internal delegate int allow_picture_in_picture_without_user_activation_delegate(cef_browser_view_delegate_t* self, cef_browser_view_t* browser_view);
         
         private static int _sizeof;
         

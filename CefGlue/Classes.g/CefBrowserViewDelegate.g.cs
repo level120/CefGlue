@@ -41,10 +41,10 @@ namespace Xilium.CefGlue
         private cef_browser_view_delegate_t.on_popup_browser_view_created_delegate _ds12;
         private cef_browser_view_delegate_t.get_chrome_toolbar_type_delegate _ds13;
         private cef_browser_view_delegate_t.use_frameless_window_for_picture_in_picture_delegate _ds14;
-        private cef_browser_view_delegate_t.allow_move_for_picture_in_picture_delegate _ds15;
-        private cef_browser_view_delegate_t.allow_picture_in_picture_without_user_activation_delegate _ds16;
-        private cef_browser_view_delegate_t.on_gesture_command_delegate _ds17;
-        private cef_browser_view_delegate_t.get_browser_runtime_style_delegate _ds18;
+        private cef_browser_view_delegate_t.on_gesture_command_delegate _ds15;
+        private cef_browser_view_delegate_t.get_browser_runtime_style_delegate _ds16;
+        private cef_browser_view_delegate_t.allow_move_for_picture_in_picture_delegate _ds17;
+        private cef_browser_view_delegate_t.allow_picture_in_picture_without_user_activation_delegate _ds18;
         
         protected CefBrowserViewDelegate()
         {
@@ -92,14 +92,14 @@ namespace Xilium.CefGlue
             _self->_get_chrome_toolbar_type = Marshal.GetFunctionPointerForDelegate(_ds13);
             _ds14 = new cef_browser_view_delegate_t.use_frameless_window_for_picture_in_picture_delegate(use_frameless_window_for_picture_in_picture);
             _self->_use_frameless_window_for_picture_in_picture = Marshal.GetFunctionPointerForDelegate(_ds14);
-            _ds15 = new cef_browser_view_delegate_t.allow_move_for_picture_in_picture_delegate(allow_move_for_picture_in_picture);
-            _self->_allow_move_for_picture_in_picture = Marshal.GetFunctionPointerForDelegate(_ds15);
-            _ds16 = new cef_browser_view_delegate_t.allow_picture_in_picture_without_user_activation_delegate(allow_picture_in_picture_without_user_activation);
-            _self->_allow_picture_in_picture_without_user_activation = Marshal.GetFunctionPointerForDelegate(_ds16);
-            _ds17 = new cef_browser_view_delegate_t.on_gesture_command_delegate(on_gesture_command);
-            _self->_on_gesture_command = Marshal.GetFunctionPointerForDelegate(_ds17);
-            _ds18 = new cef_browser_view_delegate_t.get_browser_runtime_style_delegate(get_browser_runtime_style);
-            _self->_get_browser_runtime_style = Marshal.GetFunctionPointerForDelegate(_ds18);
+            _ds15 = new cef_browser_view_delegate_t.on_gesture_command_delegate(on_gesture_command);
+            _self->_on_gesture_command = Marshal.GetFunctionPointerForDelegate(_ds15);
+            _ds16 = new cef_browser_view_delegate_t.get_browser_runtime_style_delegate(get_browser_runtime_style);
+            _self->_get_browser_runtime_style = Marshal.GetFunctionPointerForDelegate(_ds16);
+            _ds17 = new cef_browser_view_delegate_t.allow_move_for_picture_in_picture_delegate(allow_move_for_picture_in_picture);
+            _self->_allow_move_for_picture_in_picture = Marshal.GetFunctionPointerForDelegate(_ds17);
+            _ds18 = new cef_browser_view_delegate_t.allow_picture_in_picture_without_user_activation_delegate(allow_picture_in_picture_without_user_activation);
+            _self->_allow_picture_in_picture_without_user_activation = Marshal.GetFunctionPointerForDelegate(_ds18);
         }
         
         ~CefBrowserViewDelegate()
