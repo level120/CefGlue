@@ -454,8 +454,13 @@ def make_proxy_g_body(cls):
       result.append(privateOrProtected + ' int _disposed = 0;')
       result.append('')
 
-    isRefCounted = cls.get_parent_capi_name() == "cef_base_ref_counted_t"
-    isScoped = cls.get_parent_capi_name() == "cef_base_scoped_t"
+    # NOTE: do not narrow isRefCounted to "direct parent is cef_base_ref_counted_t" here -
+    # derived proxies (CefWindow : CefPanel : CefView) are still ref-counted through their
+    # top base, and ToNative() below MUST AddRef for them too: CEF's Unwrap() on the receiving
+    # side releases one reference for every struct pointer we hand over (arguments and handler
+    # return values alike). Without the AddRef the managed proxy's only reference is stolen and
+    # the object gets freed while the proxy is still in use (observed: a stored owner CefWindow
+    # started aliasing whichever window was created next).
 
     # ctor
     result.append(privateOrProtected + ' %(csname)s(%(iname)s* ptr)' % { 'csname' : csname, 'iname' : iname })

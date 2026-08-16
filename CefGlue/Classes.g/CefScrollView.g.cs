@@ -29,6 +29,7 @@ namespace Xilium.CefGlue
         
         internal new cef_scroll_view_t* ToNative()
         {
+            AddRef();
             return (cef_scroll_view_t*)_self;
         }
     }

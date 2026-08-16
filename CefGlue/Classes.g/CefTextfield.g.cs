@@ -29,6 +29,7 @@ namespace Xilium.CefGlue
         
         internal new cef_textfield_t* ToNative()
         {
+            AddRef();
             return (cef_textfield_t*)_self;
         }
     }

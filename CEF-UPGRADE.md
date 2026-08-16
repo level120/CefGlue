@@ -163,6 +163,7 @@ Deprecated-but-present features: mark the `classdef` entry with a `# (Deprecated
 | `Could not find CEF_API_HASH… constant.` | `make_version_cs` regex vs a reformatted `cef_api_hash.h` / the ≥126 `cef_api_versions.h` rework (2.1) |
 | Classes/members silently missing from output | Parser can't parse a new header idiom — patch the vendored `cef_parser.py` (a CefGlue-adapted fork; see the "large jumps" row in 2.1) |
 | Build passes but P/Invokes throw `EntryPointNotFoundException` at runtime | Wrong C name emission — the ≥122 `get_capi_name()` fix in `cef_parser.py` (2.1) |
+| A stored proxy (e.g. an owner `CefWindow` kept across callbacks) suddenly reports another object's state, or use-after-free crashes after passing/returning proxies to CEF | Reference-count contract: **every proxy `ToNative()` must `AddRef()`** — CEF's `Unwrap()` on the receiving side releases one reference for each struct pointer we hand over (call arguments *and* handler return values such as `GetParentWindow`). `make_interop.py` derives `isRefCounted` from the *top* base (`get_top_base_class_name`); a regression narrowed it to the direct parent, so derived proxies (`CefWindow : CefPanel : CefView`, `CefRequestContext : CefPreferenceManager`, layouts, buttons) emitted `ToNative()` without `AddRef()` and silently stole the managed proxy's only reference (fixed on the 146 branch, 2026-08-16). Check `Classes.g/*.g.cs` for `ToNative()` bodies lacking `AddRef();` after regenerating. |
 
 ---
 

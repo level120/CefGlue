@@ -29,6 +29,7 @@ namespace Xilium.CefGlue
         
         internal new cef_label_button_t* ToNative()
         {
+            AddRef();
             return (cef_label_button_t*)_self;
         }
     }
